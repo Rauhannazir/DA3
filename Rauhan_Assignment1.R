@@ -494,6 +494,51 @@ race_married <- ggplot(elementary_middle_school_teachers, aes(x = married_status
 
 
 
+########### Regressions ################# 
+
+####Setting up the models
+
+# First model will be the most basic one. Where I will include education as the only x variable. 
+# As I believe this could be the most essential factor in deciding the wage per hour
+
+model1 <- as.formula(wph ~ educ)
+
+
+# In the second regression, added some more important variables that could have the most impact on wage per hour.
+# For instance  age, as it can reflect on how experience the teacher is, hence impacting the wage per hour. 
+# So the square term of age as well to factor in the change in wage levels with a higher age.
+# It also contains the gender variable as wage may be different for both genders.
+# Finally the region, as some regions pay higer than other according to the living expenses
+
+model2 <- as.formula(wph ~ educ + gender + age + agesq + region)
+
+# Third model contains the interaction term for gender and education and all the variables that we believe may impact the wage of an individual plus 
+
+model3 <- as.formula(wph ~ educ + age + agesq + gender + gender*educ + race_dummy + ownchild + unionmme + married_status  + pr_born + region + Sector)
+
+# Fourth model contains everything plus interaction terms for gender, race_dummy, and unionmme
+
+model4 <- as.formula(wph ~ educ + age + agesq + gender + race_dummy + ownchild + unionmme + married_status + Sector + pr_born  + region + 
+                       ownchild*gender + gender*educ + gender*unionmme + gender*married_status + gender*race_dummy*educ +
+                       race_dummy*educ + race_dummy*gender + race_dummy*married_status +
+                       unionmme*Sector + pr_born*unionmme + region*unionmme)
+
+
+### Running the regressions
+reg1 <- feols(model1, data = elementary_middle_school_teachers , vcov="hetero")
+reg2 <- feols(model2, data = elementary_middle_school_teachers , vcov="hetero" )
+reg3 <- feols(model3, data = elementary_middle_school_teachers , vcov="hetero" )
+reg4 <- feols(model4, data = elementary_middle_school_teachers , vcov="hetero" )
+
+
+# evaluation of the models: using all the sample
+fitstat_register("k", function(x){length( x$coefficients ) - 1}, "No. Variables")           
+etable( reg1 , reg2 , reg3 , reg4 , fitstat = c('aic','bic','rmse','r2','n','k'), keepFactors = TRUE )
+
+
+
+
+
 
   
   
