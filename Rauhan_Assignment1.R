@@ -60,6 +60,36 @@ elementary_middle_school_teachers <- elementary_middle_school_teachers[uhours >=
 
 #Another important thing that we need to do is to find out the missing values for variables
 
+NA_filter <- sapply(elementary_middle_school_teachers, function(x) sum(is.na(x)))
+NA_filter[NA_filter > 0]
+
+# Only the ethnicity variable has NA values, and that too in large number (2970). Our total number of observations 
+# after filtering the data is 3195. So with over 90% of NA values, it would not make much sense to include it in
+# model as even if we wanted to include the results would not be useful.
+
+#Dropping the Ethnicity column 
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[, ethnic := NULL]
+
+# Counting Number observation in each Education Level
+elementary_middle_school_teachers[,.(Count=.N), by= grade92][order(Count,decreasing=TRUE)]
+
+#Majority of the teachers are of Grade 43 & 44 (Over 95%), so I am making a decision of dropping the teachers of lower
+# grades as it is highly unlikely that they get this teaching job unless they are grade 43 or above 
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[grade92 >= 43]
+
+# Doing the same for age variable 
+
+elementary_middle_school_teachers[,.(Count=.N), by= age][order(Count,decreasing=TRUE)]
+
+#There is no such need to drop any age bracket since the data is distributed evenly, which is true for this teaching 
+#profession. Still dropping the single observation for below age 22. 
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[age >= 22]
+
+
+
 
 
 
