@@ -140,6 +140,7 @@ ggplot(elementary_middle_school_teachers) +
   labs(x = "age squared")
 
 
+
 ### Creating factors for key variables, so that we can run more effective and interpretable regressions moving forward
 
 # Creating levels for grade92 variable in a new variable (educ)
@@ -148,6 +149,10 @@ elementary_middle_school_teachers <-elementary_middle_school_teachers[grade92 ==
 elementary_middle_school_teachers <-elementary_middle_school_teachers[grade92 == 45, educ := "Professional-School"]
 elementary_middle_school_teachers <-elementary_middle_school_teachers[grade92 == 46, educ := "Doctorate degree"]
 
+# Looking at the result
+datasummary(wph*factor(educ)  ~ Mean + Percent()+ SD + Min + Max + P25 + P75 + N , data = elementary_middle_school_teachers)
+#There does not seem to be much difference between the average wages of all the education levels except the ones with 
+#Doctorate degrees, with a slightly higer mean wage 
 
 # Creating factor variable for marital variable as married_status
 
@@ -155,16 +160,335 @@ elementary_middle_school_teachers[marital <= 2, married_status := "married"]
 elementary_middle_school_teachers[marital <= 6 & marital >= 3, married_status := "separated"]
 elementary_middle_school_teachers[marital == 7, married_status := "never married"]
 
-# Creating factor variable for race (Will divide into white and others)
+# Looking at the result
+datasummary(wph*factor(married_status)  ~ Mean + Percent()+ SD + Min + Max + P25 + P75 + N , data = elementary_middle_school_teachers)
+#Marriage status does not appear to have an significant impact on mean wage 
+
+# Creating factor/dummy variable for race (Will divide into white and others)
 
 elementary_middle_school_teachers <- elementary_middle_school_teachers[race == 1, race_dummy := "white"]
 elementary_middle_school_teachers <- elementary_middle_school_teachers[race != 1, race_dummy := "other"]
 
+# Looking at the result
+datasummary(wph*factor(race_dummy)  ~ Mean + Percent()+ SD + Min + Max + P25 + P75 + N , data = elementary_middle_school_teachers)
+#same is the case for race
 
 # Creating factor variable for sex as gender
 
 elementary_middle_school_teachers[sex == 1, gender := "male"]
 elementary_middle_school_teachers[sex == 2, gender := "female"]
+
+# Looking at the result
+datasummary(wph*factor(gender)  ~ Mean + Percent()+ SD + Min + Max + P25 + P75 + N , data = elementary_middle_school_teachers)
+#There is a difference between males and females wage. With slightly higher wage per hour for males.
+#Majority are females in this occupation
+
+#One other factor that could have an impact on wages is that whether a person owns a child 
+#Modifying the ownchild variable to binary, no matter the number of children, it will be 1 if there is a child
+#present and 0 if there is no child 
+
+# Counting the number of observations by Ownchild
+elementary_middle_school_teachers[,.(count=.N), by= ownchild]
+
+# Create if individuals own child or no
+elementary_middle_school_teachers <- elementary_middle_school_teachers %>% mutate(ownchild=case_when(
+  ownchild==0 ~ 0,
+  TRUE ~ 1))
+#seeing the result
+datasummary( wph*factor(ownchild) ~ N + Percent() + SD + Mean, data = elementary_middle_school_teachers ) 
+
+#no difference between the two wage per hour 
+
+# Exploring the class varibles
+datasummary( wph*factor(class) ~ N + Percent() + Mean + SD , data = elementary_middle_school_teachers)
+
+#There does not seem to be much difference within government and private classes. So will club them 
+#together 
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[class == "Government - Federal"|
+                       class=="Government - Local"|class=="Government - State", Sector := "Government"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[class == "Private, For Profit"| 
+                                                      class=="Private, Nonprofit", Sector := "Private"]
+
+datasummary( wph*factor(Sector) ~ N + Percent() + Mean, data = elementary_middle_school_teachers ) 
+
+#same is the case for their wage per hour 
+
+# unionmme
+datasummary( wph*factor(unionmme) ~ N + Percent() + Mean, data = elementary_middle_school_teachers)
+
+#Higher wage per hour for teachers who are in the union 
+# state 
+datasummary( wph*factor(state) ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+
+# prcitshp
+datasummary( wph*factor(prcitshp) ~ N + Percent() + Mean, data = elementary_middle_school_teachers ) 
+
+#grouping foreign and native into just two separate categories into a variable called origin
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[prcitshp=="Native, Born Abroad Of US Parent(s)"|
+                                    prcitshp=="Native, Born in PR or US Outlying Area"|prcitshp=="Native, Born In US",origin := "Native"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[prcitshp=="Foreign Born, Not a US Citizen"|
+                                          prcitshp=="Foreign Born, US Cit By Naturalization",origin := "Foreign "]
+
+datasummary( wph*factor(origin) ~ N + Percent() + Mean, data = elementary_middle_school_teachers ) 
+
+
+
+
+######## Checking interaction between several variables #########
+
+## If we see differences in the averages, between different variables, we will use an interaction term for those 
+# in our regressions.
+
+#####1
+
+datasummary( wph*factor(race_dummy)*gender ~ N + Percent() + Mean, data = elementary_middle_school_teachers ) 
+# It seems like wage is different based on race_dummy and gender, especially when the race is white 
+
+race_gender <- ggplot(elementary_middle_school_teachers, aes(x = factor(race_dummy), y = wph,
+                              fill = factor(gender), color=factor(gender))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Race",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right")
+
+
+
+######2
+
+datasummary(wph*stfips*unionmme  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+
+# Even though we can see that there is a difference for the 2, to include it in our regression and not have 
+# variables number too high, I will create a variable called regions and club different states into them 
+
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[stfips %in% c("WA", "OR", "MT", "ID", "WY", "NV", "UT", "CO", "AZ", "NM", "HI", "AK", "CA"), region := "west"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[stfips %in% c("ND", "SD", "NE", "KS", "MN", "IA", "MO", "WI", "IL", "IN", "MI", "OH"), region := "mid-west"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[stfips %in% c("OK", "TX", "AR", "LA", "KY", "TN", "MS", "AL", "WV", "VA", "NC", "SC", "GA", "FL", "DC","MD","DE"), region := "south"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[stfips %in% c("PA", "NY", "VT", "NH", "ME","MA","RI","CT","NJ"), region := "north-east"]
+
+
+
+datasummary(wph*region*unionmme  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+
+#interaction term will be added as there is a difference in the mean values 
+
+unionmme_region <- ggplot(elementary_middle_school_teachers, aes(x = region , y = wph,
+                                  fill = factor(unionmme), color=factor(unionmme))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Region",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+##### 3
+
+
+datasummary( wph*factor(educ)*gender ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# The wage is different based on education and gender
+
+educ_gender <- ggplot(elementary_middle_school_teachers, aes(x = factor(educ), y = wph,
+                              fill = factor(gender), color=factor(gender))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Education",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 70), breaks = seq(0,70, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+######## 4
+
+datasummary( wph*educ*race_dummy*gender ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on education, race_dummy and gender
+
+educ_race <- ggplot(elementary_middle_school_teachers, aes(x = factor(educ), y = wph,
+                            fill = factor(race_dummy), color=factor(race_dummy))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Education",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 50), breaks = seq(0,50, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+######## 5
+
+datasummary( wph*unionmme*gender ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on being a union member and gender
+
+union_gender <- ggplot(elementary_middle_school_teachers, aes(x = unionmme, y = wph,
+                               fill = factor(gender), color=factor(gender))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Union Membership",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 50), breaks = seq(0,50, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+
+########### 6
+
+datasummary( wph*married_status*gender ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on marriage status and gender
+
+married_gender <- ggplot(elementary_middle_school_teachers, aes(x = married_status, y = wph,
+                                 fill = factor(gender), color=factor(gender))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Married Status",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+
+########### 7
+
+datasummary(wph*Sector*unionmme  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on whether they working in a private or government institution and being a union member
+
+unionmme_Sector <- ggplot(elementary_middle_school_teachers, aes(x = Sector , y = wph,
+                                 fill = factor(unionmme), color=factor(unionmme))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Sector",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+
+###########  8
+
+datasummary(wph*prcitshp*unionmme  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on citizenship state and being a union member, 
+
+
+# based on above interaction, creating a new dummy for born in PR or outlying US to interact it with unionmme
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[prcitshp == "Native, Born in PR or US Outlying Area", pr_born := "yes"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[prcitshp != "Native, Born in PR or US Outlying Area", pr_born := "no"]
+
+# Checking the interaction of this new variable with unionmme
+datasummary(wph*pr_born*unionmme  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# There is significant difference in mean wage based on pr_born and being a union member
+
+unionmme_prborn <- ggplot(elementary_middle_school_teachers, aes(x = pr_born , y = wph,
+                                  fill = factor(unionmme), color=factor(unionmme))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Born in PR or US Outlying Area",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+########### 9
+
+datasummary(wph*factor(race_dummy)*unionmme  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is not very different based on race_dummy and being a union member, so no need for an interaction
+
+unionmme_race <- ggplot(elementary_middle_school_teachers, aes(x = race_dummy , y = wph,
+                                fill = factor(unionmme), color=factor(unionmme))) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Race",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
+
+
+
+######## 10
+
+datasummary(wph*factor(ownchild)*gender  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on presence of child
+
+#we have already converted the variable of ownchild to a binary one.
+
+ownchild_gender <- ggplot(elementary_middle_school_teachers, aes(x = factor(ownchild) , y = wph,
+                                  fill = gender, color=gender)) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Number of Children",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right")
+
+
+######### 11
+
+
+datasummary(wph*race_dummy*married_status  ~ N + Percent() + Mean, data = elementary_middle_school_teachers )
+# It seems like wage is different based on race_dummy and married status, so no need for an interaction for this.
+# especially for people who are separated 
+
+race_married <- ggplot(elementary_middle_school_teachers, aes(x = married_status , y = wph,
+                               fill = race_dummy, color=race_dummy)) +
+  geom_boxplot(alpha=0.8, na.rm=T, outlier.shape = NA, width = 0.8) +
+  stat_boxplot(geom = "errorbar", width = 0.8, size = 0.3, na.rm=T)+
+  scale_color_manual(name="",
+                     values=c('red','blue')) +
+  scale_fill_manual(name="",
+                    values=c('red','blue')) +
+  labs(x = "Married Status",y = "Wage per Hour (USD)")+
+  scale_y_continuous(expand = c(0.01,0.01), limits=c(0, 40), breaks = seq(0,40, 10))+
+  theme_bw() +
+  theme(legend.position = "right", axis.text.x = element_text(angle=45, vjust=.5))
 
 
 
