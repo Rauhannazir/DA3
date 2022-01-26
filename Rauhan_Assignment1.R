@@ -140,6 +140,34 @@ ggplot(elementary_middle_school_teachers) +
   labs(x = "age squared")
 
 
+### Creating factors for key variables, so that we can run more effective and interpretable regressions moving forward
+
+# Creating levels for grade92 variable in a new variable (educ)
+elementary_middle_school_teachers <- elementary_middle_school_teachers[grade92 == 43, educ := "Bachelors"]
+elementary_middle_school_teachers <-elementary_middle_school_teachers[grade92 == 44, educ := "Masters"]
+elementary_middle_school_teachers <-elementary_middle_school_teachers[grade92 == 45, educ := "Professional-School"]
+elementary_middle_school_teachers <-elementary_middle_school_teachers[grade92 == 46, educ := "Doctorate degree"]
+
+
+# Creating factor variable for marital variable as married_status
+
+elementary_middle_school_teachers[marital <= 2, married_status := "married"]
+elementary_middle_school_teachers[marital <= 6 & marital >= 3, married_status := "separated"]
+elementary_middle_school_teachers[marital == 7, married_status := "never married"]
+
+# Creating factor variable for race (Will divide into white and others)
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[race == 1, race_dummy := "white"]
+elementary_middle_school_teachers <- elementary_middle_school_teachers[race != 1, race_dummy := "other"]
+
+
+# Creating factor variable for sex as gender
+
+elementary_middle_school_teachers[sex == 1, gender := "male"]
+elementary_middle_school_teachers[sex == 2, gender := "female"]
+
+
+
 
 
 
