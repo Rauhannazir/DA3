@@ -17,7 +17,7 @@ library(ggplot2)
 # Loading data
 data <- fread("https://osf.io/4ay9x/download")
 
-## Data Munging/Cleaning
+### Data Munging/Cleaning ###
 
 #Counting the people in each occupation to check the sample size I will be working with
 
@@ -90,8 +90,54 @@ elementary_middle_school_teachers <- elementary_middle_school_teachers[age >= 22
 
 
 
+# Looking at the relationships of target variable and key predictors
+
+# 1- grade92 & wage per hour(wph)  
+
+ggplot(elementary_middle_school_teachers, aes(x = grade92, y = wph)) +
+  geom_point() +
+  geom_smooth(method = 'loess', formula = y ~ x) + 
+  theme_bw()
+
+# 2- age with wage per hour (wph)
+
+ggplot(elementary_middle_school_teachers, aes(x = age, y = wph)) +
+  geom_point() +
+  geom_smooth(method = 'loess', formula = y ~ x) + 
+  theme_bw()
 
 
+
+
+## Looking at the distribution of  the target variable
+
+ggplot(elementary_middle_school_teachers) +
+  geom_density(aes(x=wph)) +
+  theme_bw() + 
+  labs(x = "Wage per Hour (USD)")
+
+
+# Even though it has a bit of right-tail, I have decided to not take the log, as the relation between the key variables 
+# is linear
+
+
+# Checking the distribution of the age variable
+ggplot(elementary_middle_school_teachers) +
+  geom_density(aes(x=age)) +
+  theme_bw() + 
+  labs(x = "age")
+
+#even though it is kind of normally distributed, will check how it varies with including the square term
+
+#adding the age squared term
+
+elementary_middle_school_teachers <- elementary_middle_school_teachers[, agesq := age^2]
+
+# Checking the distribution of the age variable
+ggplot(elementary_middle_school_teachers) +
+  geom_density(aes(x=agesq)) +
+  theme_bw() + 
+  labs(x = "age squared")
 
 
 
