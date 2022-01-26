@@ -614,7 +614,7 @@ ggplot(elementary_middle_school_teachers, aes(x=predict(reg3, elementary_middle_
   geom_abline(intercept = 0, slope = 1, size = 0.5) +
   scale_x_continuous(limits = c(0,50)) + 
   scale_y_continuous(limits = c(0,80)) +
-  theme_bw()
+  theme_bw() + labs(x= "Predicted Values - Wage per Hour USD", y= " Actual Values - Wage per Hour (USD)")
 
 ###################
 
@@ -634,9 +634,3 @@ grid.arrange(unionmme_prborn, unionmme_race, unionmme_region, nrow = 2, ncol = 2
 
 
 
-
-  
-  
-  
-  
-  
