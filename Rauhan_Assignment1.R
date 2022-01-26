@@ -623,9 +623,10 @@ ggplot(elementary_middle_school_teachers, aes(x=predict(reg3, elementary_middle_
 grid.arrange(educ_gender, educ_race, race_gender, race_married, 
              nrow = 2, ncol = 2)
 
-grid.arrange(married_gender, ownchild_gender, union_gender, unionmme_class, nrow = 2, ncol = 2)
+grid.arrange(married_gender, ownchild_gender, union_gender, unionmme_Sector, nrow = 2, ncol = 2)
 
 grid.arrange(unionmme_prborn, unionmme_race, unionmme_region, nrow = 2, ncol = 2)
+
 
 
 
