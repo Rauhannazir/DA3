@@ -612,8 +612,8 @@ ggplot( m_comp , aes( x = complexity , y = RMSE ) ) +
 ggplot(elementary_middle_school_teachers, aes(x=predict(reg3, elementary_middle_school_teachers), y=wph)) + 
   geom_point(alpha = 0.5) +
   geom_abline(intercept = 0, slope = 1, size = 0.5) +
-  scale_x_continuous(limits = c(0,30)) + 
-  scale_y_continuous(limits = c(0,60)) +
+  scale_x_continuous(limits = c(0,50)) + 
+  scale_y_continuous(limits = c(0,80)) +
   theme_bw()
 
 ###################
