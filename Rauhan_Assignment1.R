@@ -538,6 +538,100 @@ etable( reg1 , reg2 , reg3 , reg4 , fitstat = c('aic','bic','rmse','r2','n','k')
 
 
 
+#####################
+# Cross-validation for better evaluation of predictive performance
+# Simple k-fold cross validation setup:
+# 1) Used method for estimating the model: "lm" - linear model (y_hat = b0+b1*x1+b2*x2 + ...)
+# 2) set number of folds to use (must be less than the no. observations)
+
+
+k <- 4
+
+# We use the 'train' function which allows many type of model training -> use cross-validation
+set.seed(420)
+cv1 <- train(model1, elementary_middle_school_teachers, method = "lm", trControl = trainControl(method = "cv", number = k))
+
+# Check the output:
+cv1
+summary(cv1)
+cv1$results
+cv1$resample
+
+set.seed(420)
+cv2 <- train(model2, elementary_middle_school_teachers, method = "lm", trControl = trainControl(method = "cv", number = k))
+set.seed(420)
+cv3 <- train(model3, elementary_middle_school_teachers, method = "lm", trControl = trainControl(method = "cv", number = k), na.action = "na.omit")
+set.seed(420)
+cv4 <- train(model4, elementary_middle_school_teachers, method = "lm", trControl = trainControl(method = "cv", number = k), na.action = "na.omit")
+
+# Calculate RMSE for each fold and the average RMSE as well
+cv <- c("cv1", "cv2", "cv3", "cv4")
+rmse_cv <- c()
+
+for(i in 1:length(cv)){
+  rmse_cv[i] <- sqrt((get(cv[i])$resample[[1]][1]^2 +
+                        get(cv[i])$resample[[1]][2]^2 +
+                        get(cv[i])$resample[[1]][3]^2 +
+                        get(cv[i])$resample[[1]][4]^2)/4)
+}
+
+
+# summarize results
+cv_mat <- data.frame(rbind(cv1$resample[4], "Average"),
+                     rbind(cv1$resample[1], rmse_cv[1]),
+                     rbind(cv2$resample[1], rmse_cv[2]),
+                     rbind(cv3$resample[1], rmse_cv[3]),
+                     rbind(cv4$resample[1], rmse_cv[4])
+)
+
+colnames(cv_mat)<-c("Resample","Model1", "Model2", "Model3", "Model4")
+cv_mat 
+
+# Show model complexity and out-of-sample RMSE performance
+m_comp <- c()
+models <- c("reg1", "reg2", "reg3", "reg4")
+for( i in 1 : length(cv) ){
+  m_comp[ i ] <- length( get( models[i] )$coefficient  - 1 ) 
+}
+
+m_comp <- tibble( model = models , 
+                  complexity = m_comp,
+                  RMSE = rmse_cv )
+
+ggplot( m_comp , aes( x = complexity , y = RMSE ) ) +
+  geom_point(color='red',size=2) +
+  geom_line(color='blue',size=0.5)+
+  labs(x='Number of explanatory variables',y='Averaged RMSE on test samples',
+       title='Prediction performance and model compexity') +
+  theme_bw()
+
+#THE RMSE of all the models is not that different from one another. It decreases the most moving from model 1 and 2.
+#After that it increases minimally. 
+
+# plotting results
+ggplot(elementary_middle_school_teachers, aes(x=predict(reg3, elementary_middle_school_teachers), y=wph)) + 
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, size = 0.5) +
+  scale_x_continuous(limits = c(0,30)) + 
+  scale_y_continuous(limits = c(0,60)) +
+  theme_bw()
+
+###################
+
+## Arranging interaction plots into a grid for better presentation
+
+grid.arrange(educ_gender, educ_race, race_gender, race_married, 
+             nrow = 2, ncol = 2)
+
+grid.arrange(married_gender, ownchild_gender, union_gender, unionmme_class, nrow = 2, ncol = 2)
+
+grid.arrange(unionmme_prborn, unionmme_race, unionmme_region, nrow = 2, ncol = 2)
+
+
+
+
+
+
 
 
   
